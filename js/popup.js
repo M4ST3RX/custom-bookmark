@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const tabsContainer = document.getElementById("siteTabs");
     const siteList = document.getElementById("site-list");
 
     document.getElementById("open-add-site").addEventListener("click", function () {
@@ -9,6 +8,9 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById("open-settings").addEventListener("click", function () {
         window.location.href = "settings.html"; 
     });
+
+
+    // Load custom tabs
 
     chrome.storage.local.get("customTabs", function (result) {
         let customTabs = result.customTabs || [];
@@ -47,6 +49,14 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
 
+        chrome.storage.local.get("customTabs", function (result) {
+            let customTabs = result.customTabs || [];
+            if (!customTabs.includes(name)) {
+                customTabs.push(name);
+                chrome.storage.local.set({ "customTabs": customTabs });
+            }
+        });
+
         // Automatically select the newly created tab
         setActiveTab(name);
     }
@@ -79,59 +89,37 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function loadSites(env) {
-        chrome.storage.local.get(["sites"], function (result) {
-            let sites = result.sites || {};
-            let siteListContent = sites[env] || [];
-
+        env = env.toLowerCase();
+        chrome.storage.local.get("bookmarks", function (result) {
+            let data = result.bookmarks || { local: [], staging: [], live: [] };
+            let siteListContent = data[env] || [];
+    
             siteList.innerHTML = ""; // Clear current list
-            siteListContent.forEach(site => {
+    
+            siteListContent.forEach((site, index) => {
                 let li = document.createElement("li");
                 li.className = "list-group-item d-flex justify-content-between align-items-center";
                 li.innerHTML = `
-                    ${site}
-                    <button class="btn btn-sm btn-outline-danger delete-site">❌</button>
+                    <span>${site.name}</span>
+                    <button class="btn btn-light btn-sm context-menu-btn" data-url="${site.url}">⋮</button>
                 `;
-
-                // Handle Site Deletion
-                li.querySelector(".delete-site").addEventListener("click", function () {
-                    siteListContent = siteListContent.filter(s => s !== site);
-                    sites[env] = siteListContent;
-                    chrome.storage.local.set({ "sites": sites });
-                    li.remove();
+    
+                // Attach context menu event
+                li.querySelector(".context-menu-btn").addEventListener("click", function (event) {
+                    showContextMenu(event, site, env, index);
                 });
-
+    
                 siteList.appendChild(li);
             });
         });
     }
 
     // Context Menu Logic
-    let contextMenu = document.getElementById("context-menu");
-
-    function initializeApp(data) {
-        console.log(data);
-        const siteList = document.getElementById("site-list");
-        siteList.innerHTML = "";
-
-        data.forEach(site => {
-            const listItem = document.createElement("li");
-            listItem.className = "list-group-item d-flex justify-content-between align-items-center";
-            listItem.innerHTML = `
-                <span>${site.name}</span>
-                <button class="btn btn-light btn-sm context-menu-btn" data-url="${site.url}">⋮</button>
-            `;
-            
-            listItem.querySelector(".context-menu-btn").addEventListener("click", function (event) {
-                showContextMenu(event, site);
-            });
-
-            siteList.appendChild(listItem);
-        });
-    }
 
     function showContextMenu(event, site, env, index) {
         event.preventDefault();
 
+        let contextMenu = document.getElementById("context-menu");
         const popupWidth = 400; // Keep in sync with popup.html
         const menuWidth = 80; // Approximate menu width
         const menuHeight = 100; // Approximate menu height
@@ -155,25 +143,47 @@ document.addEventListener('DOMContentLoaded', function () {
         contextMenu.querySelector(".open").onclick = () => window.open(site.url, '_blank');
         contextMenu.querySelector(".admin").onclick = () => window.open(`${site.url}/admin`, '_blank');
         contextMenu.querySelector(".delete").onclick = () => deleteSite(env, index);
+
+        // Close menu when clicking elsewhere
+        document.addEventListener("click", () => {
+            contextMenu.classList.remove("active");
+        });
     }
 
-    // Close menu when clicking elsewhere
-    document.addEventListener("click", () => {
-        contextMenu.classList.remove("active");
+    // Drag and Drop Logic
+
+    siteList.addEventListener("dragstart", (e) => {
+        if (e.target.classList.contains("list-group-item")) {
+            e.target.classList.add("dragging");
+        }
     });
 
-    function deleteSite(env, index) {
-        fetch('bookmarks.json')
-            .then(response => response.json())
-            .then(data => {
-                data[env].splice(index, 1);
-                saveData(data);
-                loadSites(data, env);
-            });
-    }
+    siteList.addEventListener("dragend", (e) => {
+        e.target.classList.remove("dragging");
+    });
 
-    function saveData(data) {
-        chrome.storage.local.set({ "bookmarks": data });
-    }
+    siteList.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const dragging = document.querySelector(".dragging");
+        const afterElement = getDragAfterElement(siteList, e.clientY);
+        if (afterElement == null) {
+            siteList.appendChild(dragging);
+        } else {
+            siteList.insertBefore(dragging, afterElement);
+        }
+    });
 
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll(".list-group-item:not(.dragging)")];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
 });
