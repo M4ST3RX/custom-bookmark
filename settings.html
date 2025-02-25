@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="p-3">
+    <button id="back-to-popup" class="btn btn-secondary mb-3">← Back</button>
+
+    <h2 class="mb-3">Settings</h2>
+
+    <div class="mb-3">
+        <label for="theme" class="form-label">Theme</label>
+        <select id="theme" class="form-select">
+            <option value="light">Light</option>
+            <option value="dark">Dark</option>
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="default-tab" class="form-label">Default Tab</label>
+        <select id="default-tab" class="form-select">
+            <option value="local">Local</option>
+            <option value="staging">Staging</option>
+            <option value="live">Live</option>
+        </select>
+    </div>
+
+    <button id="save-settings" class="btn btn-success w-100">Save Settings</button>
+
+    <script src="js/bootstrap.bundle.min.js"></script>
+    <script src="js/settings.js"></script>
+</body>
+</html>
