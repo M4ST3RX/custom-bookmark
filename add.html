@@ -13,11 +13,16 @@
     <h2>Add a New Site</h2>
     <input type="text" id="site-name" class="form-control mb-2" placeholder="Site Name">
     <input type="url" id="site-url" class="form-control mb-2" placeholder="Site URL">
+    <input type="text" id="admin-url" class="form-control mb-2" placeholder="Admin URL">
     <select id="site-env" class="form-select mb-2">
         <option value="local">Local</option>
         <option value="staging">Staging</option>
         <option value="live">Live</option>
     </select>
+    <label>
+        <input type="checkbox" id="is-header">
+        Make this a header
+    </label>
     <button id="save-site" class="btn btn-success w-100">Save</button>
 
     <script src="js/bootstrap.bundle.min.js"></script>

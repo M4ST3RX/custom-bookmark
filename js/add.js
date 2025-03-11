@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
         let name = document.getElementById("site-name").value.trim();
         let url = document.getElementById("site-url").value.trim();
         let env = document.getElementById("site-env").value;
+        let adminUrl = document.getElementById("admin-url").value.trim();
 
         if (!name || !url) {
             alert("Please enter a valid site name and URL.");
@@ -15,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         chrome.storage.local.get("bookmarks", function (result) {
             let data = result.bookmarks || { local: [], staging: [], live: [] };
-            data[env].push({ name, url });
+            data[env].push({ name, url, adminUrl: adminUrl || null });
 
             chrome.storage.local.set({ "bookmarks": data }, function () {
                 window.location.href = "popup.html"; // Return to main popup after saving

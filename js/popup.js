@@ -12,9 +12,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Load custom tabs
 
-    chrome.storage.local.get("customTabs", function (result) {
+    chrome.storage.local.get(["customTabs", "defaultTab"], function (result) {
         let customTabs = result.customTabs || [];
+        let defaultTab = result.defaultTab;
         customTabs.forEach(tabName => addNewTab(tabName));
+
+        if (defaultTab && customTabs.includes(defaultTab)) {
+            setActiveTab(defaultTab);
+        } else if (customTabs.length > 0) {
+            setActiveTab(customTabs[0]);
+        }
     });
 
     document.querySelector(".add-tab").addEventListener("click", async () => {
@@ -56,9 +63,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 chrome.storage.local.set({ "customTabs": customTabs });
             }
         });
-
-        // Automatically select the newly created tab
-        setActiveTab(name);
     }
 
     function removeTab(name, tabElement) {
@@ -141,13 +145,25 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Set up menu actions
         contextMenu.querySelector(".open").onclick = () => window.open(site.url, '_blank');
-        contextMenu.querySelector(".admin").onclick = () => window.open(`${site.url}/admin`, '_blank');
+        contextMenu.querySelector(".admin").onclick = () => {
+            if (site.adminUrl) {
+                window.open(site.url + site.adminUrl, '_blank');
+            } else {
+                alert("No Admin URL configured for this site.");
+            }
+        };
         contextMenu.querySelector(".delete").onclick = () => deleteSite(env, index);
 
         // Close menu when clicking elsewhere
-        document.addEventListener("click", () => {
-            contextMenu.classList.remove("active");
-        });
+        document.addEventListener("click", handleOutsideClick);
+
+
+        function handleOutsideClick(e) {
+            if (!contextMenu.contains(e.target) && !e.target.classList.contains("context-menu-btn")) {
+                contextMenu.classList.remove("active");
+                document.removeEventListener("click", handleOutsideClick);
+            }
+        }
     }
 
     // Drag and Drop Logic
